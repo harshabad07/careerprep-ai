@@ -3,657 +3,260 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CareerPrep AI — Placement & Interview Assistant</title>
-    <!-- Tailwind CSS CDN -->
+    <title>CareerPrep AI — Placement & Interview Chatbot</title>
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Font Awesome Icons -->
+    <!-- FontAwesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    colors: {
-                        brand: {
-                            50: '#eef2ff',
-                            100: '#e0e7ff',
-                            500: '#6366f1',
-                            600: '#4f46e5',
-                            700: '#4338ca',
-                            900: '#312e81',
-                        }
-                    },
-                    fontFamily: {
-                        sans: ['Inter', 'sans-serif'],
-                        mono: ['Fira Code', 'monospace'],
-                    }
-                }
-            }
-        }
-    </script>
     <style>
-        /* Custom Scrollbar */
-        ::-webkit-scrollbar {
-            width: 6px;
-            height: 6px;
-        }
-        ::-webkit-scrollbar-track {
-            background: transparent;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: rgba(156, 163, 175, 0.4);
-            border-radius: 9999px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: rgba(156, 163, 175, 0.7);
-        }
-
-        /* Pulsing Dot Animation */
-        .typing-dot {
-            animation: typing 1.4s infinite ease-in-out both;
-        }
-        .typing-dot:nth-child(1) { animation-delay: -0.32s; }
-        .typing-dot:nth-child(2) { animation-delay: -0.16s; }
-        @keyframes typing {
-            0%, 80%, 100% { transform: scale(0); opacity: 0.3; }
-            40% { transform: scale(1); opacity: 1; }
-        }
-
-        /* Message Fade-in */
-        .message-anim {
-            animation: fadeIn 0.25s ease-out forwards;
-        }
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(8px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
+        body { font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+        .chat-box { height: calc(100vh - 160px); }
+        .message-anim { animation: fadeIn 0.2s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
-<body class="bg-slate-900 text-slate-100 font-sans antialiased h-screen flex flex-col overflow-hidden">
+<body class="bg-slate-100 text-slate-800 h-screen flex flex-col justify-between">
 
-    <!-- Top Navigation Bar -->
-    <header class="bg-slate-800/80 backdrop-blur-md border-b border-slate-700/60 px-4 py-3 flex items-center justify-between z-10">
+    <!-- Simple Top Bar -->
+    <header class="bg-indigo-600 text-white px-4 py-3 flex items-center justify-between shadow-md">
         <div class="flex items-center space-x-3">
-            <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center shadow-lg shadow-indigo-500/20">
-                <i class="fa-solid me-0 fa-graduation-cap text-white text-lg"></i>
+            <div class="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center text-lg">
+                🎓
             </div>
             <div>
-                <h1 class="font-bold text-lg leading-tight flex items-center gap-2">
-                    CareerPrep AI
-                    <span class="bg-indigo-500/20 text-indigo-300 text-xs px-2 py-0.5 rounded-full font-medium border border-indigo-500/30">v1.0 Assistant</span>
-                </h1>
-                <p class="text-xs text-slate-400">Campus Placements & Interview Assistant</p>
+                <h1 class="font-bold text-base leading-tight">CareerPrep AI</h1>
+                <p class="text-xs text-indigo-200">Placement & Interview Assistant</p>
             </div>
         </div>
-
-        <!-- Right Quick Actions -->
-        <div class="flex items-center space-x-2">
-            <button id="clearChatBtn" title="Clear Chat" class="px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-700/50 hover:bg-slate-700 text-slate-300 hover:text-white transition-all flex items-center gap-1.5">
-                <i class="fa-solid fa-trash-can text-slate-400"></i>
-                <span class="hidden sm:inline">Clear Chat</span>
-            </button>
-            <button id="modeToggleBtn" title="Interview Mode Status" class="px-3 py-1.5 rounded-lg text-xs font-medium bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 flex items-center gap-1.5">
-                <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                <span id="statusLabel">Ready</span>
-            </button>
-        </div>
+        <button onclick="clearChat()" class="text-xs bg-indigo-700 hover:bg-indigo-800 px-3 py-1.5 rounded-lg text-indigo-100 transition">
+            <i class="fa-solid fa-rotate-right mr-1"></i> Reset Chat
+        </button>
     </header>
 
-    <!-- Main Container -->
-    <div class="flex-1 flex overflow-hidden relative">
-        
-        <!-- Sidebar Navigation (Desktop) -->
-        <aside class="hidden md:flex flex-col w-64 bg-slate-800/40 border-r border-slate-700/50 p-4 space-y-4">
-            <div class="text-xs font-semibold uppercase tracking-wider text-slate-400 px-2">Preparation Hub</div>
-            
-            <nav class="space-y-1 text-sm">
-                <button onclick="sendQuickPrompt('Start a Technical Mock Interview for SDE role')" class="w-full text-left px-3 py-2.5 rounded-lg font-medium text-slate-300 hover:bg-indigo-600/15 hover:text-indigo-300 transition-all flex items-center gap-2.5 group">
-                    <i class="fa-solid fa-code text-indigo-400 group-hover:scale-110 transition-transform"></i>
-                    <span>Technical Mock Interview</span>
-                </button>
-                <button onclick="sendQuickPrompt('Conduct an HR Mock Interview with classic behavioral questions')" class="w-full text-left px-3 py-2.5 rounded-lg font-medium text-slate-300 hover:bg-indigo-600/15 hover:text-indigo-300 transition-all flex items-center gap-2.5 group">
-                    <i class="fa-solid fa-user-tie text-emerald-400 group-hover:scale-110 transition-transform"></i>
-                    <span>HR Mock Interview</span>
-                </button>
-                <button onclick="sendQuickPrompt('Give me a Data Structures & Algorithms practice problem with hint')" class="w-full text-left px-3 py-2.5 rounded-lg font-medium text-slate-300 hover:bg-indigo-600/15 hover:text-indigo-300 transition-all flex items-center gap-2.5 group">
-                    <i class="fa-solid fa-brain text-amber-400 group-hover:scale-110 transition-transform"></i>
-                    <span>DSA Practice Questions</span>
-                </button>
-                <button onclick="sendQuickPrompt('Provide 3 Quantitative Aptitude practice questions with step-by-step solutions')" class="w-full text-left px-3 py-2.5 rounded-lg font-medium text-slate-300 hover:bg-indigo-600/15 hover:text-indigo-300 transition-all flex items-center gap-2.5 group">
-                    <i class="fa-solid fa-calculator text-cyan-400 group-hover:scale-110 transition-transform"></i>
-                    <span>Aptitude & Reasoning</span>
-                </button>
-                <button onclick="sendQuickPrompt('What are the key points to make a standout fresher resume for campus placements?')" class="w-full text-left px-3 py-2.5 rounded-lg font-medium text-slate-300 hover:bg-indigo-600/15 hover:text-indigo-300 transition-all flex items-center gap-2.5 group">
-                    <i class="fa-solid fa-file-lines text-rose-400 group-hover:scale-110 transition-transform"></i>
-                    <span>Resume Guidelines</span>
-                </button>
-                <button onclick="sendQuickPrompt('How should I answer Tell me about yourself in an HR interview?')" class="w-full text-left px-3 py-2.5 rounded-lg font-medium text-slate-300 hover:bg-indigo-600/15 hover:text-indigo-300 transition-all flex items-center gap-2.5 group">
-                    <i class="fa-solid fa-comments text-purple-400 group-hover:scale-110 transition-transform"></i>
-                    <span>Common HR Questions</span>
-                </button>
-            </nav>
-
-            <div class="mt-auto bg-slate-800/80 border border-slate-700/60 rounded-xl p-3 text-xs text-slate-400 space-y-1">
-                <div class="font-semibold text-slate-200 flex items-center gap-1.5">
-                    <i class="fa-solid fa-shield-halved text-indigo-400"></i> Integrity Guarantee
-                </div>
-                <p class="leading-relaxed">CareerPrep AI provides guidance, explanations, and realistic practice to help you succeed honestly.</p>
+    <!-- Chat Messages Container -->
+    <main id="chatMessages" class="chat-box flex-1 overflow-y-auto p-4 space-y-3 max-w-3xl w-full mx-auto">
+        <!-- Welcome Message -->
+        <div class="message-anim flex items-start gap-2.5">
+            <div class="w-8 h-8 rounded-full bg-indigo-600 text-white flex items-center justify-center text-xs font-bold shrink-0">
+                AI
             </div>
-        </aside>
-
-        <!-- Chat Area -->
-        <main class="flex-1 flex flex-col h-full bg-slate-900/60 relative">
-            
-            <!-- Quick Chips Bar (Mobile & Quick Access) -->
-            <div class="bg-slate-800/30 border-b border-slate-800/80 px-4 py-2 flex items-center gap-2 overflow-x-auto no-scrollbar scroll-smooth">
-                <span class="text-xs font-semibold text-slate-400 shrink-0">Quick Topics:</span>
-                <button onclick="sendQuickPrompt('Start Technical Mock Interview')" class="shrink-0 text-xs px-2.5 py-1 rounded-full bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-300 border border-indigo-500/20 transition-all">🎯 Tech Mock</button>
-                <button onclick="sendQuickPrompt('Start HR Mock Interview')" class="shrink-0 text-xs px-2.5 py-1 rounded-full bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 border border-emerald-500/20 transition-all">👔 HR Mock</button>
-                <button onclick="sendQuickPrompt('DSA Array Problem')" class="shrink-0 text-xs px-2.5 py-1 rounded-full bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/20 transition-all">💻 DSA Code</button>
-                <button onclick="sendQuickPrompt('Aptitude Quiz')" class="shrink-0 text-xs px-2.5 py-1 rounded-full bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-300 border border-cyan-500/20 transition-all">📊 Aptitude</button>
-                <button onclick="sendQuickPrompt('Resume Tips')" class="shrink-0 text-xs px-2.5 py-1 rounded-full bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border border-rose-500/20 transition-all">📄 Resume Checklist</button>
-            </div>
-
-            <!-- Messages Log -->
-            <div id="chatMessages" class="flex-1 overflow-y-auto p-4 md:p-6 space-y-4">
-                <!-- Messages populated by JS -->
-            </div>
-
-            <!-- Typing Indicator (Hidden by default) -->
-            <div id="typingIndicator" class="hidden px-6 py-2 flex items-center space-x-2 text-slate-400 text-xs">
-                <div class="w-6 h-6 rounded-full bg-indigo-600 flex items-center justify-center text-white font-bold text-xs">AI</div>
-                <div class="flex items-center space-x-1 bg-slate-800 px-3 py-2 rounded-2xl border border-slate-700/50">
-                    <span class="w-1.5 h-1.5 bg-indigo-400 rounded-full typing-dot"></span>
-                    <span class="w-1.5 h-1.5 bg-indigo-400 rounded-full typing-dot"></span>
-                    <span class="w-1.5 h-1.5 bg-indigo-400 rounded-full typing-dot"></span>
-                </div>
-                <span class="italic text-slate-500">CareerPrep AI is typing...</span>
-            </div>
-
-            <!-- Input Area -->
-            <div class="p-3 md:p-4 bg-slate-800/80 border-t border-slate-700/60 backdrop-blur-md">
-                <form id="chatForm" class="flex items-center gap-2 max-w-5xl mx-auto">
-                    <div class="relative flex-1">
-                        <textarea 
-                            id="userInput" 
-                            rows="1"
-                            placeholder="Ask a technical concept, request a mock interview, or paste your answer..." 
-                            class="w-full bg-slate-900/90 border border-slate-700/80 focus:border-indigo-500 rounded-xl px-4 py-3 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 resize-none max-h-32 transition-all"
-                            onkeydown="handleKeyDown(event)"
-                        ></textarea>
-                    </div>
-                    <button 
-                        type="submit" 
-                        id="sendBtn"
-                        class="w-11 h-11 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-medium flex items-center justify-center shadow-lg shadow-indigo-600/30 active:scale-95 transition-all shrink-0"
-                    >
-                        <i class="fa-solid fa-paper-plane text-sm"></i>
-                    </button>
-                </form>
-                <div class="mt-2 text-center text-[11px] text-slate-500">
-                    CareerPrep AI — Placement & Interview Assistant • Press <kbd class="px-1 py-0.5 bg-slate-700 rounded text-slate-300">Enter</kbd> to send, <kbd class="px-1 py-0.5 bg-slate-700 rounded text-slate-300">Shift + Enter</kbd> for newline
+            <div class="bg-white border border-slate-200 rounded-2xl rounded-tl-none p-3.5 text-sm shadow-sm max-w-[85%] space-y-2">
+                <p class="font-semibold text-indigo-950">Hello! I am CareerPrep AI 👋</p>
+                <p class="text-slate-600 leading-relaxed">I'm here to help you ace your campus placements and job interviews. How can I assist you today?</p>
+                <div class="pt-1 flex flex-wrap gap-1.5 text-xs">
+                    <button onclick="quickSend('Start Technical Mock Interview')" class="bg-indigo-50 text-indigo-700 border border-indigo-200 px-2.5 py-1 rounded-full hover:bg-indigo-100">🎯 Tech Mock Interview</button>
+                    <button onclick="quickSend('Start HR Mock Interview')" class="bg-emerald-50 text-emerald-700 border border-emerald-200 px-2.5 py-1 rounded-full hover:bg-emerald-100">👔 HR Mock Interview</button>
+                    <button onclick="quickSend('DSA Question with explanation')" class="bg-amber-50 text-amber-700 border border-amber-200 px-2.5 py-1 rounded-full hover:bg-amber-100">💻 Practice DSA</button>
+                    <button onclick="quickSend('Quantitative Aptitude Practice')" class="bg-cyan-50 text-cyan-700 border border-cyan-200 px-2.5 py-1 rounded-full hover:bg-cyan-100">📊 Aptitude Test</button>
+                    <button onclick="quickSend('Resume tips for freshers')" class="bg-rose-50 text-rose-700 border border-rose-200 px-2.5 py-1 rounded-full hover:bg-rose-100">📄 Resume Tips</button>
                 </div>
             </div>
-        </main>
+        </div>
+    </main>
+
+    <!-- Typing Indicator -->
+    <div id="typing" class="hidden max-w-3xl w-full mx-auto px-4 py-1 flex items-center space-x-2 text-slate-400 text-xs">
+        <span class="italic">CareerPrep AI is typing...</span>
     </div>
 
-    <!-- Application Script -->
-    <script>
-        // State variables
-        let mockInterviewState = {
-            active: false,
-            type: null, // 'technical' or 'hr'
-            questionIndex: 0,
-            score: 0,
-            questions: []
-        };
+    <!-- Simple Input Form -->
+    <footer class="bg-white border-t border-slate-200 p-3">
+        <form id="chatForm" onsubmit="handleSend(event)" class="max-w-3xl mx-auto flex items-center gap-2">
+            <input 
+                type="text" 
+                id="userInput" 
+                placeholder="Ask a placement question or type 'Mock Interview'..." 
+                class="flex-1 bg-slate-50 border border-slate-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-indigo-600 focus:bg-white transition"
+                autocomplete="off"
+            />
+            <button 
+                type="submit" 
+                class="bg-indigo-600 hover:bg-indigo-700 text-white font-medium px-4 py-2.5 rounded-xl text-sm transition flex items-center gap-1.5 shrink-0"
+            >
+                <span>Send</span>
+                <i class="fa-solid fa-paper-plane text-xs"></i>
+            </button>
+        </form>
+    </footer>
 
-        const technicalQuestions = [
+    <!-- Simple Application Logic -->
+    <script>
+        let inMockInterview = false;
+        let interviewStep = 0;
+        let interviewType = 'tech'; // 'tech' or 'hr'
+
+        const techQuestions = [
             {
-                q: "What is the difference between Process and Thread in Operating Systems?",
-                keyPoints: ["memory space", "context switching overhead", "communication between processes vs threads"],
-                idealAnswer: "A Process is an independent program in execution with its own isolated memory address space. A Thread is a lightweight unit of execution within a process that shares memory and resources with other threads of the same process. Context switching between threads is faster than between processes."
+                q: "Question 1: What is the difference between a Process and a Thread in Operating Systems?",
+                hint: "Think about memory isolation vs shared memory space.",
+                answer: "Process is an independent program in execution with isolated memory. A Thread is a subset of a process sharing the same memory space."
             },
             {
-                q: "Explain the concept of Method Overloading vs Method Overriding in OOP.",
-                keyPoints: ["compile-time vs runtime", "same class vs subclass", "signature"],
-                idealAnswer: "Method Overloading occurs within the same class where multiple methods have the same name but different parameters (compile-time polymorphism). Method Overriding occurs in inherited classes where a subclass redefines a method from the parent class with the exact same signature (runtime polymorphism)."
+                q: "Question 2: What is Method Overloading vs Method Overriding in Object-Oriented Programming?",
+                hint: "Consider compile-time vs runtime polymorphism.",
+                answer: "Overloading happens in the same class with different parameters (compile-time). Overriding redefines a base class method in a derived class with the exact same signature (runtime)."
             },
             {
-                q: "How does a Hash Table achieve O(1) average time complexity for lookup, and how are collisions handled?",
-                keyPoints: ["hash function", "buckets/indexing", "chaining/open addressing"],
-                idealAnswer: "Hash Tables map keys to index buckets using a hash function. In the average case, direct index access takes O(1) time. Collisions (two keys hashing to the same bucket) are handled via Separate Chaining (linked lists/trees in bucket) or Open Addressing (Linear Probing, Quadratic Probing)."
-            },
-            {
-                q: "What is ACID in Database Management Systems (DBMS)? Explain each property.",
-                keyPoints: ["Atomicity", "Consistency", "Isolation", "Durability"],
-                idealAnswer: "ACID guarantees reliable database transactions: Atomicity (All or nothing), Consistency (Database state remains valid), Isolation (Concurrent transactions don't interfere), and Durability (Committed changes persist even after power loss)."
+                q: "Question 3: How does a Hash Table achieve O(1) time complexity for lookup?",
+                hint: "Explain hashing functions and key indexing.",
+                answer: "A Hash Table uses a hash function to map keys directly to array indices for O(1) average lookup. Collisions are handled via chaining or open addressing."
             }
         ];
 
         const hrQuestions = [
             {
-                q: "Tell me about yourself and why you want to join our organization.",
-                keyPoints: ["educational background", "key technical projects/skills", "enthusiasm for the role"],
-                idealAnswer: "Structure your response using the PRESENT-PAST-FUTURE framework: Start with your current degree and key technical strengths, highlight 1-2 practical projects or achievements, and conclude with why this specific company aligns with your career goals."
+                q: "Question 1: Tell me about yourself and why you chose your branch of study.",
+                hint: "Use the Present-Past-Future format: Degree, key project, and why this role.",
+                answer: "Start with your current degree and branch, mention 1-2 practical projects or achievements, and conclude with your career motivation."
             },
             {
-                q: "What is your biggest weakness, and how are you working to overcome it?",
-                keyPoints: ["real non-fatal weakness", "action plan/self-improvement", "positive outcome"],
-                idealAnswer: "Pick a real professional area for growth (e.g., getting public speaking jitters or over-analyzing code optimization early on), and explain the actionable steps you've taken to improve (e.g., joining GD practice groups, setting micro-deadlines)."
-            },
-            {
-                q: "Describe a situation where you faced a challenge or conflict during a group project and how you handled it.",
-                keyPoints: ["STAR method (Situation, Task, Action, Result)", "collaboration", "conflict resolution"],
-                idealAnswer: "Use the STAR method: Describe the group project context, the disagreement on technical approach or task distribution, how you communicated calmly to reach a compromise, and the successful project outcome."
+                q: "Question 2: What is your biggest weakness and how are you improving it?",
+                hint: "Name a real professional area of growth and your active steps to fix it.",
+                answer: "Mention a real non-critical weakness (e.g. public speaking anxiety) and detail the concrete steps you are taking to overcome it."
             }
         ];
 
-        // Initial setup
-        document.addEventListener('DOMContentLoaded', () => {
-            const savedMessages = localStorage.getItem('careerprep_chat');
-            if (savedMessages) {
-                document.getElementById('chatMessages').innerHTML = savedMessages;
-            } else {
-                showWelcomeMessage();
-            }
-            autoResizeTextarea();
-        });
-
-        function showWelcomeMessage() {
-            const welcomeHtml = `
-                <div class="message-anim max-w-3xl mx-auto bg-slate-800/90 border border-indigo-500/30 rounded-2xl p-5 shadow-xl">
-                    <div class="flex items-start gap-4">
-                        <div class="w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center text-white shrink-0 font-bold">
-                            AI
-                        </div>
-                        <div class="space-y-3 text-slate-200">
-                            <h2 class="text-base font-bold text-white flex items-center gap-2">
-                                Welcome to CareerPrep AI! 🎓
-                            </h2>
-                            <p class="text-sm leading-relaxed text-slate-300">
-                                I am your dedicated **Placement & Interview Assistant**. I can help you prepare for campus recruitment, technical interviews, HR evaluation, aptitude tests, and resume building.
-                            </p>
-                            
-                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2 text-xs">
-                                <div class="p-2.5 rounded-lg bg-slate-900/60 border border-slate-700/50 flex items-center gap-2">
-                                    <i class="fa-solid fa-code text-indigo-400"></i>
-                                    <span>Mock Technical & HR Interviews</span>
-                                </div>
-                                <div class="p-2.5 rounded-lg bg-slate-900/60 border border-slate-700/50 flex items-center gap-2">
-                                    <i class="fa-solid fa-brain text-amber-400"></i>
-                                    <span>DSA & Core CS Concepts</span>
-                                </div>
-                                <div class="p-2.5 rounded-lg bg-slate-900/60 border border-slate-700/50 flex items-center gap-2">
-                                    <i class="fa-solid fa-calculator text-cyan-400"></i>
-                                    <span>Aptitude & Verbal Reasoning</span>
-                                </div>
-                                <div class="p-2.5 rounded-lg bg-slate-900/60 border border-slate-700/50 flex items-center gap-2">
-                                    <i class="fa-solid fa-file-lines text-rose-400"></i>
-                                    <span>Resume Advice & HR Strategy</span>
-                                </div>
-                            </div>
-
-                            <p class="text-xs text-slate-400 pt-1">
-                                Click any quick topic from the sidebar or type a message below to begin!
-                            </p>
-                        </div>
-                    </div>
-                </div>
-            `;
-            appendMessageRaw(welcomeHtml);
-        }
-
-        // Handle sending user input
-        document.getElementById('chatForm').addEventListener('submit', (e) => {
+        function handleSend(e) {
             e.preventDefault();
-            submitUserMessage();
-        });
-
-        function handleKeyDown(e) {
-            if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                submitUserMessage();
-            }
-        }
-
-        function autoResizeTextarea() {
-            const textarea = document.getElementById('userInput');
-            textarea.addEventListener('input', () => {
-                textarea.style.height = 'auto';
-                textarea.style.height = (textarea.scrollHeight) + 'px';
-            });
-        }
-
-        function submitUserMessage() {
-            const inputEl = document.getElementById('userInput');
-            const text = inputEl.value.trim();
-            if (!text) return;
+            const input = document.getElementById('userInput');
+            const msg = input.value.trim();
+            if (!msg) return;
 
             // Render User Message
-            renderUserMessage(text);
-            inputEl.value = '';
-            inputEl.style.height = 'auto';
+            addMessage(msg, 'user');
+            input.value = '';
 
-            // Process logic
-            processAssistantResponse(text);
+            // Show Typing
+            document.getElementById('typing').classList.remove('hidden');
+            scrollToBottom();
+
+            // Simulate Bot Response
+            setTimeout(() => {
+                document.getElementById('typing').classList.add('hidden');
+                generateBotResponse(msg);
+                scrollToBottom();
+            }, 500);
         }
 
-        function sendQuickPrompt(promptText) {
-            document.getElementById('userInput').value = promptText;
-            submitUserMessage();
+        function quickSend(text) {
+            document.getElementById('userInput').value = text;
+            document.getElementById('chatForm').dispatchEvent(new Event('submit'));
         }
 
-        function renderUserMessage(text) {
-            const html = `
-                <div class="message-anim max-w-3xl mx-auto flex justify-end">
-                    <div class="bg-indigo-600 text-white rounded-2xl rounded-tr-none px-4 py-3 text-sm max-w-[85%] shadow-md leading-relaxed">
+        function addMessage(text, sender) {
+            const container = document.getElementById('chatMessages');
+            const div = document.createElement('div');
+            div.className = 'message-anim flex items-start gap-2.5 ' + (sender === 'user' ? 'justify-end' : '');
+
+            if (sender === 'user') {
+                div.innerHTML = `
+                    <div class="bg-indigo-600 text-white rounded-2xl rounded-tr-none px-4 py-2.5 text-sm max-w-[85%] shadow-sm leading-relaxed">
                         ${escapeHtml(text)}
                     </div>
-                </div>
-            `;
-            appendMessageRaw(html);
-        }
-
-        function renderAssistantMessage(markdownContent, actionBadge = null) {
-            const formattedContent = formatMarkdown(markdownContent);
-            const badgeHtml = actionBadge ? `<span class="inline-block bg-indigo-500/20 text-indigo-300 text-xs px-2 py-0.5 rounded font-medium mb-2 border border-indigo-500/30">${actionBadge}</span>` : '';
-
-            const html = `
-                <div class="message-anim max-w-3xl mx-auto flex items-start gap-3">
-                    <div class="w-8 h-8 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center text-white text-xs font-bold shrink-0 shadow-md">
+                `;
+            } else {
+                div.innerHTML = `
+                    <div class="w-8 h-8 rounded-full bg-indigo-600 text-white flex items-center justify-center text-xs font-bold shrink-0">
                         AI
                     </div>
-                    <div class="bg-slate-800 border border-slate-700/70 rounded-2xl rounded-tl-none p-4 text-sm text-slate-200 max-w-[85%] shadow-md leading-relaxed space-y-2">
-                        ${badgeHtml}
-                        <div>${formattedContent}</div>
+                    <div class="bg-white border border-slate-200 rounded-2xl rounded-tl-none p-3.5 text-sm shadow-sm max-w-[85%] space-y-2 text-slate-800 leading-relaxed">
+                        ${formatText(text)}
+                    </div>
+                `;
+            }
+
+            container.appendChild(div);
+            scrollToBottom();
+        }
+
+        function generateBotResponse(userMsg) {
+            const text = userMsg.toLowerCase();
+
+            // Mock Interview Flow
+            if (inMockInterview) {
+                const qList = interviewType === 'tech' ? techQuestions : hrQuestions;
+                const currentQ = qList[interviewStep];
+                
+                let feedback = `<b>Feedback on your response:</b><br>Good attempt! Key points to cover: ${currentQ.answer}<br><br>`;
+                interviewStep++;
+
+                if (interviewStep < qList.length) {
+                    const nextQ = qList[interviewStep];
+                    addMessage(`${feedback}<b>Next Question (${interviewStep + 1}/${qList.length}):</b><br>${nextQ.q}`, 'bot');
+                } else {
+                    inMockInterview = false;
+                    addMessage(`${feedback}<b>🎉 Mock Interview Completed!</b><br>Great practice session. You can start another mock interview anytime!`, 'bot');
+                }
+                return;
+            }
+
+            // Start Tech Mock Interview
+            if (text.includes('tech mock') || text.includes('technical mock') || (text.includes('mock') && text.includes('tech'))) {
+                inMockInterview = true;
+                interviewStep = 0;
+                interviewType = 'tech';
+                addMessage(`🎯 <b>Technical Mock Interview Started!</b><br><br>${techQuestions[0].q}`, 'bot');
+                return;
+            }
+
+            // Start HR Mock Interview
+            if (text.includes('hr mock') || (text.includes('mock') && text.includes('hr'))) {
+                inMockInterview = true;
+                interviewStep = 0;
+                interviewType = 'hr';
+                addMessage(`👔 <b>HR Mock Interview Started!</b><br><br>${hrQuestions[0].q}`, 'bot');
+                return;
+            }
+
+            // DSA
+            if (text.includes('dsa') || text.includes('data structure') || text.includes('array') || text.includes('algorithm')) {
+                addMessage(`💻 <b>DSA Practice: Reverse an Array</b><br><br><b>Problem:</b> Given an array of numbers, reverse it in-place.<br><br><b>Two-Pointer Approach (O(N) Time, O(1) Space):</b><br>1. Set pointer <code>left = 0</code> and <code>right = length - 1</code>.<br>2. Swap <code>arr[left]</code> and <code>arr[right]</code>.<br>3. Increment <code>left</code> and decrement <code>right</code> until they meet.`, 'bot');
+                return;
+            }
+
+            // Aptitude
+            if (text.includes('aptitude') || text.includes('math')) {
+                addMessage(`📊 <b>Quantitative Aptitude Problem</b><br><br><b>Question:</b> A and B working together can complete a job in 6 days. A alone takes 10 days. How long will B take alone?<br><br><b>Solution:</b><br>• Combined 1-day work = 1/6<br>• A's 1-day work = 1/10<br>• B's 1-day work = 1/6 - 1/10 = (5-3)/30 = 2/30 = 1/15<br><br><b>Answer:</b> B will take <b>15 days</b> alone.`, 'bot');
+                return;
+            }
+
+            // Resume
+            if (text.includes('resume')) {
+                addMessage(`📄 <b>Fresher Resume Checklist:</b><br><br>1. Keep it strictly <b>1 Page</b>.<br>2. Format project bullets using action verbs (e.g. <i>"Developed real-time chat app using WebSockets..."</i>).<br>3. Include sections: Education, Skills, Projects, Achievements.<br>4. Always add your GitHub & LinkedIn profiles at the top.`, 'bot');
+                return;
+            }
+
+            // General Response
+            addMessage(`I can help you with:<br>• <b>Technical & HR Mock Interviews</b> (Type "Tech Mock" or "HR Mock")<br>• <b>DSA & Core CS Concepts</b> (Type "DSA")<br>• <b>Aptitude Practice</b> (Type "Aptitude")<br>• <b>Resume Guidelines</b> (Type "Resume")<br><br>What would you like to focus on right now?`, 'bot');
+        }
+
+        function scrollToBottom() {
+            const chat = document.getElementById('chatMessages');
+            chat.scrollTop = chat.scrollHeight;
+        }
+
+        function clearChat() {
+            inMockInterview = false;
+            interviewStep = 0;
+            document.getElementById('chatMessages').innerHTML = `
+                <div class="message-anim flex items-start gap-2.5">
+                    <div class="w-8 h-8 rounded-full bg-indigo-600 text-white flex items-center justify-center text-xs font-bold shrink-0">AI</div>
+                    <div class="bg-white border border-slate-200 rounded-2xl rounded-tl-none p-3.5 text-sm shadow-sm max-w-[85%] space-y-2">
+                        <p class="font-semibold text-indigo-950">Chat Reset! 👋</p>
+                        <p class="text-slate-600">How can CareerPrep AI help you prepare today?</p>
                     </div>
                 </div>
             `;
-            appendMessageRaw(html);
         }
 
-        function appendMessageRaw(html) {
-            const container = document.getElementById('chatMessages');
-            container.insertAdjacentHTML('beforeend', html);
-            container.scrollTop = container.scrollHeight;
-            saveChat();
-        }
-
-        function showTyping(show) {
-            const indicator = document.getElementById('typingIndicator');
-            if (show) {
-                indicator.classList.remove('hidden');
-            } else {
-                indicator.classList.add('hidden');
-            }
-            const container = document.getElementById('chatMessages');
-            container.scrollTop = container.scrollHeight;
-        }
-
-        // Process Response Logic
-        function processAssistantResponse(userMsg) {
-            showTyping(true);
-
-            setTimeout(() => {
-                showTyping(false);
-                const lower = userMsg.toLowerCase();
-
-                // Mock Interview State Handling
-                if (mockInterviewState.active) {
-                    evaluateMockAnswer(userMsg);
-                    return;
-                }
-
-                // Start Mock Interview Commands
-                if (lower.includes('technical mock interview') || (lower.includes('mock') && lower.includes('tech'))) {
-                    startMockInterview('technical');
-                    return;
-                }
-                if (lower.includes('hr mock interview') || (lower.includes('mock') && lower.includes('hr'))) {
-                    startMockInterview('hr');
-                    return;
-                }
-
-                // DSA Questions
-                if (lower.includes('dsa') || lower.includes('data structure') || lower.includes('algorithm') || lower.includes('array')) {
-                    respondDSA();
-                    return;
-                }
-
-                // Aptitude Questions
-                if (lower.includes('aptitude') || lower.includes('math') || lower.includes('quiz')) {
-                    respondAptitude();
-                    return;
-                }
-
-                // Resume Tips
-                if (lower.includes('resume')) {
-                    respondResume();
-                    return;
-                }
-
-                // HR Preparation
-                if (lower.includes('hr question') || lower.includes('tell me about yourself')) {
-                    respondHRAdvice();
-                    return;
-                }
-
-                // General Response fallback
-                respondGeneral(userMsg);
-            }, 600);
-        }
-
-        function startMockInterview(type) {
-            mockInterviewState.active = true;
-            mockInterviewState.type = type;
-            mockInterviewState.questionIndex = 0;
-            mockInterviewState.score = 0;
-            mockInterviewState.questions = type === 'technical' ? technicalQuestions : hrQuestions;
-
-            document.getElementById('statusLabel').textContent = `${type.toUpperCase()} Interview in Progress`;
-            
-            const firstQ = mockInterviewState.questions[0].q;
-            renderAssistantMessage(
-                `### 🎯 Mock ${type === 'technical' ? 'Technical' : 'HR'} Interview Started!\n\nWe will go through **${mockInterviewState.questions.length} questions** one at a time. After each response, I will provide constructive feedback.\n\n---\n\n**Question 1 of ${mockInterviewState.questions.length}:**\n> ${firstQ}\n\n*Please type your complete answer below when ready.*`,
-                "Mock Interview"
-            );
-        }
-
-        function evaluateMockAnswer(userAnswer) {
-            const currentQ = mockInterviewState.questions[mockInterviewState.questionIndex];
-            const lowerAnswer = userAnswer.toLowerCase();
-
-            // Check key points present
-            let matches = 0;
-            currentQ.keyPoints.forEach(kp => {
-                if (lowerAnswer.includes(kp.toLowerCase())) matches++;
-            });
-
-            let feedbackMsg = "";
-            if (matches >= 2 || userAnswer.length > 80) {
-                mockInterviewState.score++;
-                feedbackMsg = `✅ **Great answer!** You covered key aspects such as *${currentQ.keyPoints.join(', ')}*.`;
-            } else {
-                feedbackMsg = `💡 **Good effort!** To make your answer stronger, make sure to mention: *${currentQ.keyPoints.join(', ')}*.`;
-            }
-
-            feedbackMsg += `\n\n**Ideal Sample Answer:**\n> "${currentQ.idealAnswer}"`;
-
-            mockInterviewState.questionIndex++;
-
-            // Check if interview complete
-            if (mockInterviewState.questionIndex >= mockInterviewState.questions.length) {
-                const finalScore = mockInterviewState.score;
-                const total = mockInterviewState.questions.length;
-                mockInterviewState.active = false;
-                document.getElementById('statusLabel').textContent = "Ready";
-
-                renderAssistantMessage(
-                    `${feedbackMsg}\n\n---\n\n🎉 **Mock Interview Completed!**\n- **Score**: ${finalScore} / ${total}\n- **Performance**: ${finalScore >= 3 ? 'Excellent readiness! Keep practicing for speed.' : 'Good foundation! Review core concepts to build confidence.'}\n\nWould you like to try another mock interview or practice DSA/Aptitude questions?`,
-                    "Interview Complete"
-                );
-            } else {
-                const nextQ = mockInterviewState.questions[mockInterviewState.questionIndex].q;
-                renderAssistantMessage(
-                    `${feedbackMsg}\n\n---\n\n**Question ${mockInterviewState.questionIndex + 1} of ${mockInterviewState.questions.length}:**\n> ${nextQ}`,
-                    `Question ${mockInterviewState.questionIndex + 1}`
-                );
-            }
-        }
-
-        function respondDSA() {
-            const response = `### 💻 Data Structures & Algorithms Practice
-
-**Problem: Two Sum (Array / Hash Map)**
-
-**Description:**
-Given an array of integers \`nums\` and an integer \`target\`, return indices of the two numbers such that they add up to \`target\`.
-
-**Example:**
-\`\`\`text
-Input: nums = [2, 7, 11, 15], target = 9
-Output: [0, 1] (because 2 + 7 = 9)
-\`\`\`
-
-**Optimal Approach (Hash Map - O(N) Time, O(N) Space):**
-1. Iterate through the array.
-2. For each element \`x\`, calculate \`complement = target - x\`.
-3. Check if \`complement\` exists in your Hash Map.
-4. If it exists, return \`[hashMap[complement], currentIndex]\`.
-5. Otherwise, store \`hashMap[x] = currentIndex\`.
-
-Would you like to write the solution in Python, C++, or Java, or try another problem?`;
-            renderAssistantMessage(response, "DSA Practice");
-        }
-
-        function respondAptitude() {
-            const response = `### 📊 Quantitative Aptitude Practice
-
-**Question 1 (Time & Work):**
-A can finish a piece of work in 10 days, and B can finish the same work in 15 days. How many days will they take to complete the work together?
-
-**Step-by-Step Solution:**
-1. Work done by A in 1 day = \`1/10\`
-2. Work done by B in 1 day = \`1/15\`
-3. Combined 1-day work = \`1/10 + 1/15 = (3 + 2)/30 = 5/30 = 1/6\`
-4. Total time taken together = **6 days**.
-
----
-
-**Question 2 (Speed & Distance):**
-A train 150 meters long passes a telegraph pole in 9 seconds. Find the speed of the train in km/h.
-
-**Step-by-Step Solution:**
-1. Speed = \`Distance / Time = 150m / 9s = 50/3 m/s\`
-2. Convert m/s to km/h by multiplying by \`18/5\`:
-   \`(50/3) * (18/5) = 60 km/h\`
-
-Would you like more aptitude questions or logical reasoning practice?`;
-            renderAssistantMessage(response, "Aptitude Quiz");
-        }
-
-        function respondResume() {
-            const response = `### 📄 Top Fresher Resume Checklist for Placements
-
-1. **Keep it 1 Page**: Recruiters spend 6 seconds per resume. Focus on high-impact details.
-2. **Action-Verb Project Bullets**:
-   - *Bad:* "Made a library website using React."
-   - *Good:* "Engineered a responsive Library Management portal using React & Node.js, reducing search query latency by 40%."
-3. **Key Sections Required**:
-   - **Contact Information** (GitHub, LinkedIn, Email, Phone)
-   - **Education** (Degree, CGPA/Percentage, Graduation Year)
-   - **Technical Skills** (Languages, Frameworks, Developer Tools, Databases)
-   - **Projects** (2-3 strong technical projects with GitHub links)
-   - **Certifications & Achievements** (Hackathons, Coding ratings)
-
-Would you like me to review a specific project description or bullet point from your resume?`;
-            renderAssistantMessage(response, "Resume Guide");
-        }
-
-        function respondHRAdvice() {
-            const response = `### 🗣️ How to Answer "Tell Me About Yourself"
-
-**The PRESENT-PAST-FUTURE Framework:**
-
-1. **Present (30 seconds)**: State your current status, degree, college, and core specialization.
-   > *"I am a final-year Computer Science undergraduate at XYZ College with a focus on Software Engineering and Web Technologies."*
-2. **Past (45 seconds)**: Highlight your top 1-2 practical projects, internships, or coding achievements.
-   > *"Recently, I developed a real-time study timer and task manager extension that helped 500+ active users organize their work. I've also solved 200+ problems on LeetCode focusing on Data Structures."*
-3. **Future (15 seconds)**: Explain why you are excited about this specific role and company.
-   > *"I am eager to apply my problem-solving and software engineering skills in a collaborative team at your company."*
-
-Would you like to practice your answer now?`;
-            renderAssistantMessage(response, "HR Strategy");
-        }
-
-        function respondGeneral(userMsg) {
-            const response = `I understand you're asking about: "${escapeHtml(userMsg)}".
-
-As **CareerPrep AI**, I am here to assist with:
-- Conducting **Mock Interviews** (Technical or HR)
-- Explaining **Core CS Concepts** (OS, DBMS, Networks, OOPs, Data Structures)
-- Providing **Aptitude Practice** & Solutions
-- Guiding **Resume Building** & Interview Strategy
-
-Feel free to choose a quick action from the sidebar or tell me what specific placement topic you'd like to work on!`;
-            renderAssistantMessage(response, "Guidance");
-        }
-
-        // Markdown Formatting Helper
-        function formatMarkdown(text) {
-            let src = escapeHtml(text);
-            
-            // Headers
-            src = src.replace(/^### (.*$)/gim, '<h3 class="text-base font-bold text-white mt-3 mb-1">$1</h3>');
-            src = src.replace(/^## (.*$)/gim, '<h2 class="text-lg font-bold text-white mt-4 mb-2">$1</h2>');
-            
-            // Blockquotes
-            src = src.replace(/^&gt; (.*$)/gim, '<blockquote class="border-l-4 border-indigo-500 pl-3 py-1 my-2 bg-indigo-500/10 italic text-slate-300">$1</blockquote>');
-            
-            // Bold & Italic
-            src = src.replace(/\*\*(.*?)\*\*/g, '<strong class="font-semibold text-white">$1</strong>');
-            src = src.replace(/\*(.*?)\*/g, '<em class="italic text-slate-300">$1</em>');
-
-            // Code Blocks
-            src = src.replace(/```(\w+)?\n([\s\S]*?)```/g, function(match, lang, code) {
-                return `<pre class="bg-slate-950 p-3 rounded-lg border border-slate-700/80 my-2 font-mono text-xs overflow-x-auto text-indigo-300"><code>${code}</code></pre>`;
-            });
-
-            // Inline Code
-            src = src.replace(/`([^`]+)`/g, '<code class="bg-slate-950 text-indigo-300 px-1.5 py-0.5 rounded text-xs font-mono">$1</code>');
-
-            // Bullet Lists
-            src = src.replace(/^\s*[-*]\s+(.*$)/gim, '<li class="ml-4 list-disc text-slate-300">$1</li>');
-
-            // Newlines to line breaks (outside of pre)
-            src = src.replace(/\n\n/g, '<br><br>');
-
-            return src;
+        function formatText(str) {
+            return str;
         }
 
         function escapeHtml(text) {
             const div = document.createElement('div');
             div.textContent = text;
             return div.innerHTML;
-        }
-
-        // Clear Chat
-        document.getElementById('clearChatBtn').addEventListener('click', () => {
-            if (confirm('Clear chat history?')) {
-                localStorage.removeItem('careerprep_chat');
-                document.getElementById('chatMessages').innerHTML = '';
-                mockInterviewState.active = false;
-                document.getElementById('statusLabel').textContent = "Ready";
-                showWelcomeMessage();
-            }
-        });
-
-        function saveChat() {
-            const container = document.getElementById('chatMessages');
-            localStorage.setItem('careerprep_chat', container.innerHTML);
         }
     </script>
 </body>
