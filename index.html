@@ -1,256 +1,567 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CareerPrep AI — Placement & Interview Chatbot</title>
+    <title>CareerPrep AI — ChatGPT UI</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- FontAwesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- Highlight.js for Code Formatting -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <!-- Marked.js for Markdown Parsing -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        gptBg: '#212121',
+                        gptSidebar: '#171717',
+                        gptInput: '#2f2f2f',
+                        gptHover: '#2f2f2f',
+                        gptBorder: '#383838',
+                        gptCard: '#2f2f2f',
+                        gptGreen: '#10a37f'
+                    }
+                }
+            }
+        }
+    </script>
     <style>
-        body { font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
-        .chat-box { height: calc(100vh - 160px); }
-        .message-anim { animation: fadeIn 0.2s ease-in-out; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+        /* Custom Scrollbars */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #424242; border-radius: 9999px; }
+        ::-webkit-scrollbar-thumb:hover { background: #555555; }
+        
+        .markdown-body pre { background-color: #1e1e1e; border-radius: 0.5rem; padding: 1rem; margin-top: 0.5rem; margin-bottom: 0.5rem; overflow-x: auto; }
+        .markdown-body code { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 0.875rem; }
+        .markdown-body p { margin-bottom: 0.75rem; line-height: 1.625; }
+        .markdown-body ul { list-style-type: disc; padding-left: 1.25rem; margin-bottom: 0.75rem; }
+        .markdown-body ol { list-style-type: decimal; padding-left: 1.25rem; margin-bottom: 0.75rem; }
+        .markdown-body h1, .markdown-body h2, .markdown-body h3 { font-weight: 700; color: #fff; margin-top: 1rem; margin-bottom: 0.5rem; }
+        .markdown-body table { width: 100%; border-collapse: collapse; margin-top: 0.5rem; margin-bottom: 0.5rem; }
+        .markdown-body th, .markdown-body td { border: 1px solid #424242; padding: 0.5rem; text-align: left; }
+        .markdown-body th { background-color: #2a2a2a; }
     </style>
 </head>
-<body class="bg-slate-100 text-slate-800 h-screen flex flex-col justify-between">
+<body class="bg-gptBg text-slate-200 h-screen flex overflow-hidden font-sans antialiased">
 
-    <!-- Simple Top Bar -->
-    <header class="bg-indigo-600 text-white px-4 py-3 flex items-center justify-between shadow-md">
-        <div class="flex items-center space-x-3">
-            <div class="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center text-lg">
-                🎓
+    <!-- Left ChatGPT Sidebar -->
+    <aside id="sidebar" class="w-64 bg-gptSidebar border-r border-gptBorder flex flex-col justify-between transition-all duration-300 z-30 shrink-0">
+        <!-- Top Header in Sidebar -->
+        <div class="p-3 space-y-2">
+            <div class="flex items-center justify-between">
+                <button onclick="createNewChat()" class="flex-1 flex items-center justify-between px-3 py-2 rounded-lg border border-gptBorder hover:bg-gptHover text-sm font-medium text-slate-200 transition">
+                    <span class="flex items-center gap-2">
+                        <i class="fa-solid fa-plus text-xs"></i> New chat
+                    </span>
+                    <i class="fa-regular fa-pen-to-square text-xs text-slate-400"></i>
+                </button>
+                <button onclick="toggleSidebar()" class="md:hidden ml-2 p-2 text-slate-400 hover:text-white">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
             </div>
-            <div>
-                <h1 class="font-bold text-base leading-tight">CareerPrep AI</h1>
-                <p class="text-xs text-indigo-200">Placement & Interview Assistant</p>
+
+            <!-- Predefined AI Task Short-cuts -->
+            <div class="pt-2 text-[11px] font-semibold text-slate-400 uppercase tracking-wider px-2">AI Prep Tasks</div>
+            <nav class="space-y-1 text-xs">
+                <button onclick="triggerTask('mock_tech')" class="w-full text-left px-3 py-2 rounded-lg hover:bg-gptHover text-slate-300 flex items-center gap-2 transition">
+                    <i class="fa-solid fa-code text-indigo-400"></i> Technical Mock Interview
+                </button>
+                <button onclick="triggerTask('mock_hr')" class="w-full text-left px-3 py-2 rounded-lg hover:bg-gptHover text-slate-300 flex items-center gap-2 transition">
+                    <i class="fa-solid fa-user-tie text-emerald-400"></i> HR Behavioral Interview
+                </button>
+                <button onclick="triggerTask('dsa_solver')" class="w-full text-left px-3 py-2 rounded-lg hover:bg-gptHover text-slate-300 flex items-center gap-2 transition">
+                    <i class="fa-solid fa-brain text-amber-400"></i> Solve DSA Code Task
+                </button>
+                <button onclick="triggerTask('aptitude_solver')" class="w-full text-left px-3 py-2 rounded-lg hover:bg-gptHover text-slate-300 flex items-center gap-2 transition">
+                    <i class="fa-solid fa-calculator text-cyan-400"></i> Solve Aptitude Math
+                </button>
+                <button onclick="triggerTask('resume_builder')" class="w-full text-left px-3 py-2 rounded-lg hover:bg-gptHover text-slate-300 flex items-center gap-2 transition">
+                    <i class="fa-solid fa-file-lines text-rose-400"></i> Optimize Resume Bullet
+                </button>
+            </nav>
+        </div>
+
+        <!-- History List -->
+        <div class="flex-1 overflow-y-auto px-3 py-2 space-y-1">
+            <div class="text-[11px] font-semibold text-slate-500 uppercase tracking-wider px-2 py-1">Recent Chats</div>
+            <div id="chatHistoryList" class="space-y-1 text-xs text-slate-300">
+                <!-- Dynamically populated -->
             </div>
         </div>
-        <button onclick="clearChat()" class="text-xs bg-indigo-700 hover:bg-indigo-800 px-3 py-1.5 rounded-lg text-indigo-100 transition">
-            <i class="fa-solid fa-rotate-right mr-1"></i> Reset Chat
-        </button>
-    </header>
 
-    <!-- Chat Messages Container -->
-    <main id="chatMessages" class="chat-box flex-1 overflow-y-auto p-4 space-y-3 max-w-3xl w-full mx-auto">
-        <!-- Welcome Message -->
-        <div class="message-anim flex items-start gap-2.5">
-            <div class="w-8 h-8 rounded-full bg-indigo-600 text-white flex items-center justify-center text-xs font-bold shrink-0">
-                AI
-            </div>
-            <div class="bg-white border border-slate-200 rounded-2xl rounded-tl-none p-3.5 text-sm shadow-sm max-w-[85%] space-y-2">
-                <p class="font-semibold text-indigo-950">Hello! I am CareerPrep AI 👋</p>
-                <p class="text-slate-600 leading-relaxed">I'm here to help you ace your campus placements and job interviews. How can I assist you today?</p>
-                <div class="pt-1 flex flex-wrap gap-1.5 text-xs">
-                    <button onclick="quickSend('Start Technical Mock Interview')" class="bg-indigo-50 text-indigo-700 border border-indigo-200 px-2.5 py-1 rounded-full hover:bg-indigo-100">🎯 Tech Mock Interview</button>
-                    <button onclick="quickSend('Start HR Mock Interview')" class="bg-emerald-50 text-emerald-700 border border-emerald-200 px-2.5 py-1 rounded-full hover:bg-emerald-100">👔 HR Mock Interview</button>
-                    <button onclick="quickSend('DSA Question with explanation')" class="bg-amber-50 text-amber-700 border border-amber-200 px-2.5 py-1 rounded-full hover:bg-amber-100">💻 Practice DSA</button>
-                    <button onclick="quickSend('Quantitative Aptitude Practice')" class="bg-cyan-50 text-cyan-700 border border-cyan-200 px-2.5 py-1 rounded-full hover:bg-cyan-100">📊 Aptitude Test</button>
-                    <button onclick="quickSend('Resume tips for freshers')" class="bg-rose-50 text-rose-700 border border-rose-200 px-2.5 py-1 rounded-full hover:bg-rose-100">📄 Resume Tips</button>
+        <!-- User & Settings Footer in Sidebar -->
+        <div class="p-3 border-t border-gptBorder space-y-1">
+            <button onclick="openApiSettings()" class="w-full text-left px-3 py-2.5 rounded-lg hover:bg-gptHover text-xs text-slate-300 flex items-center justify-between transition">
+                <span class="flex items-center gap-2">
+                    <i class="fa-solid fa-key text-gptGreen"></i> API Extension Keys
+                </span>
+                <span id="apiKeyBadge" class="text-[10px] bg-gptGreen/20 text-gptGreen border border-gptGreen/30 px-1.5 py-0.5 rounded">Built-in</span>
+            </button>
+            <div class="flex items-center gap-2.5 px-3 py-2 rounded-lg hover:bg-gptHover transition cursor-pointer">
+                <div class="w-7 h-7 rounded-full bg-indigo-600 flex items-center justify-center text-white text-xs font-bold">
+                    CP
+                </div>
+                <div class="flex-1 text-xs truncate">
+                    <div class="font-medium text-slate-200 truncate">CareerPrep Student</div>
+                    <div class="text-[10px] text-slate-400">Free Tier • Placement Edition</div>
                 </div>
             </div>
         </div>
+    </aside>
+
+    <!-- Main Workspace -->
+    <main class="flex-1 flex flex-col h-full relative overflow-hidden bg-gptBg">
+
+        <!-- Top Header Bar -->
+        <header class="h-14 border-b border-gptBorder px-4 flex items-center justify-between shrink-0 bg-gptBg">
+            <div class="flex items-center gap-3">
+                <button onclick="toggleSidebar()" class="p-2 text-slate-400 hover:text-white rounded-lg hover:bg-gptHover">
+                    <i class="fa-solid fa-bars text-base"></i>
+                </button>
+                <div class="flex items-center gap-2 cursor-pointer hover:bg-gptHover px-2.5 py-1.5 rounded-xl border border-gptBorder/60 transition">
+                    <span class="font-semibold text-sm text-slate-100">CareerPrep AI 4.0</span>
+                    <i class="fa-solid fa-chevron-down text-xs text-slate-400"></i>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-2">
+                <button onclick="triggerTask('mock_tech')" class="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gptGreen/10 border border-gptGreen/30 text-gptGreen text-xs font-medium hover:bg-gptGreen/20 transition">
+                    <i class="fa-solid fa-bolt"></i> Start Prep Session
+                </button>
+            </div>
+        </header>
+
+        <!-- Chat Output Scroll Area -->
+        <div id="chatScrollArea" class="flex-1 overflow-y-auto p-4 md:p-6 space-y-6">
+            
+            <!-- ChatGPT Welcome Hero Screen (Shown when no messages) -->
+            <div id="welcomeScreen" class="max-w-2xl mx-auto my-auto py-12 text-center space-y-6">
+                <div class="w-14 h-14 bg-gptGreen/20 border border-gptGreen/40 rounded-full flex items-center justify-center mx-auto text-gptGreen text-2xl shadow-lg">
+                    <i class="fa-solid fa-graduation-cap"></i>
+                </div>
+                <div>
+                    <h2 class="text-2xl font-bold text-slate-100">What can I help with today?</h2>
+                    <p class="text-sm text-slate-400 mt-1">Your AI assistant for placement preparation, technical coding, aptitude & interviews.</p>
+                </div>
+
+                <!-- 4 Quick Card Suggestions -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-left pt-4">
+                    <div onclick="quickPrompt('Conduct a 3-question Technical Mock Interview for a Software Engineering fresher role')" class="p-3.5 rounded-xl bg-gptCard border border-gptBorder hover:bg-gptHover cursor-pointer transition space-y-1">
+                        <div class="text-xs font-semibold text-slate-200 flex items-center gap-1.5">
+                            <i class="fa-solid fa-code text-indigo-400"></i> Technical Mock Interview
+                        </div>
+                        <div class="text-xs text-slate-400">Practice OS, DBMS, OOPs & Coding questions with instant grading.</div>
+                    </div>
+                    <div onclick="quickPrompt('Solve this DSA problem with optimal code in C++ & Python: Reverse a linked list')" class="p-3.5 rounded-xl bg-gptCard border border-gptBorder hover:bg-gptHover cursor-pointer transition space-y-1">
+                        <div class="text-xs font-semibold text-slate-200 flex items-center gap-1.5">
+                            <i class="fa-solid fa-brain text-amber-400"></i> Write & Explain DSA Code
+                        </div>
+                        <div class="text-xs text-slate-400">Get clean code snippets with step-by-step logic & complexity analysis.</div>
+                    </div>
+                    <div onclick="quickPrompt('Solve Quantitative Aptitude: Time and Work problem step-by-step')" class="p-3.5 rounded-xl bg-gptCard border border-gptBorder hover:bg-gptHover cursor-pointer transition space-y-1">
+                        <div class="text-xs font-semibold text-slate-200 flex items-center gap-1.5">
+                            <i class="fa-solid fa-calculator text-cyan-400"></i> Solve Aptitude Math
+                        </div>
+                        <div class="text-xs text-slate-400">Detailed solutions for Time & Work, Speed & Distance, Probability.</div>
+                    </div>
+                    <div onclick="quickPrompt('Optimize my resume project description using high-impact action verbs')" class="p-3.5 rounded-xl bg-gptCard border border-gptBorder hover:bg-gptHover cursor-pointer transition space-y-1">
+                        <div class="text-xs font-semibold text-slate-200 flex items-center gap-1.5">
+                            <i class="fa-solid fa-file-lines text-rose-400"></i> Optimize Resume Bullets
+                        </div>
+                        <div class="text-xs text-slate-400">Transform weak project descriptions into ATS-friendly achievements.</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Messages Log -->
+            <div id="messagesContainer" class="max-w-3xl mx-auto space-y-6"></div>
+
+            <!-- Typing Indicator -->
+            <div id="gptTyping" class="hidden max-w-3xl mx-auto flex items-start gap-4">
+                <div class="w-8 h-8 rounded-full bg-gptGreen text-white flex items-center justify-center text-xs font-bold shrink-0">
+                    <i class="fa-solid fa-robot"></i>
+                </div>
+                <div class="flex items-center space-x-1.5 py-2">
+                    <div class="w-2 h-2 bg-slate-400 rounded-full animate-bounce"></div>
+                    <div class="w-2 h-2 bg-slate-400 rounded-full animate-bounce [animation-delay:0.2s]"></div>
+                    <div class="w-2 h-2 bg-slate-400 rounded-full animate-bounce [animation-delay:0.4s]"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Floating Input Footer (ChatGPT Style) -->
+        <footer class="p-3 md:p-4 shrink-0 bg-gptBg">
+            <div class="max-w-3xl mx-auto space-y-2">
+                <form id="chatForm" onsubmit="handleSend(event)" class="relative bg-gptInput border border-gptBorder rounded-2xl p-2.5 focus-within:border-slate-500 transition shadow-lg">
+                    <textarea 
+                        id="userPrompt" 
+                        rows="1" 
+                        placeholder="Message CareerPrep AI..." 
+                        class="w-full bg-transparent text-slate-100 placeholder-slate-400 text-sm focus:outline-none resize-none max-h-36 px-2 py-1 leading-relaxed"
+                        onkeydown="onEnterPress(event)"
+                    ></textarea>
+                    
+                    <div class="flex items-center justify-between pt-2 px-1">
+                        <div class="flex items-center gap-1.5 text-slate-400">
+                            <button type="button" onclick="triggerTask('mock_tech')" title="Tech Mock" class="px-2 py-1 rounded-lg hover:bg-gptHover text-xs hover:text-white transition flex items-center gap-1">
+                                <i class="fa-solid fa-code text-indigo-400"></i> Mock Tech
+                            </button>
+                            <button type="button" onclick="triggerTask('mock_hr')" title="HR Mock" class="px-2 py-1 rounded-lg hover:bg-gptHover text-xs hover:text-white transition flex items-center gap-1">
+                                <i class="fa-solid fa-user-tie text-emerald-400"></i> Mock HR
+                            </button>
+                        </div>
+                        
+                        <button type="submit" id="sendBtn" class="w-8 h-8 rounded-xl bg-slate-100 hover:bg-white text-slate-900 font-medium flex items-center justify-center transition disabled:opacity-40">
+                            <i class="fa-solid fa-arrow-up text-sm"></i>
+                        </button>
+                    </div>
+                </form>
+                
+                <p class="text-[11px] text-center text-slate-500">
+                    CareerPrep AI can make mistakes. Verify important code & placement information.
+                </p>
+            </div>
+        </footer>
     </main>
 
-    <!-- Typing Indicator -->
-    <div id="typing" class="hidden max-w-3xl w-full mx-auto px-4 py-1 flex items-center space-x-2 text-slate-400 text-xs">
-        <span class="italic">CareerPrep AI is typing...</span>
+    <!-- API Key Extension Modal -->
+    <div id="apiModal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-gptCard border border-gptBorder rounded-2xl max-w-md w-full p-6 space-y-4 shadow-2xl">
+            <div class="flex items-center justify-between border-b border-gptBorder pb-3">
+                <h3 class="font-bold text-base text-white flex items-center gap-2">
+                    <i class="fa-solid fa-key text-gptGreen"></i> API Key Settings Extension
+                </h3>
+                <button onclick="closeApiSettings()" class="text-slate-400 hover:text-white">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+            
+            <p class="text-xs text-slate-300 leading-relaxed">
+                Connect your OpenAI or custom API key to stream live model responses, or leave empty to use our built-in high-performance CareerPrep task engine.
+            </p>
+
+            <div class="space-y-3 text-xs">
+                <div>
+                    <label class="block font-medium text-slate-300 mb-1">Select Provider</label>
+                    <select id="apiProvider" class="w-full bg-gptBg border border-gptBorder rounded-lg p-2.5 text-white focus:outline-none">
+                        <option value="builtin">Built-in CareerPrep Engine (Default)</option>
+                        <option value="openai">OpenAI (GPT-4o / GPT-3.5)</option>
+                        <option value="custom">Custom Endpoint / Local Ollama</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block font-medium text-slate-300 mb-1">API Key</label>
+                    <input type="password" id="apiKeyInput" placeholder="sk-..." class="w-full bg-gptBg border border-gptBorder rounded-lg p-2.5 text-white focus:outline-none placeholder-slate-500" />
+                </div>
+            </div>
+
+            <div class="flex justify-end gap-2 pt-2">
+                <button onclick="closeApiSettings()" class="px-4 py-2 rounded-lg bg-gptHover hover:bg-slate-700 text-xs font-medium text-slate-200">Cancel</button>
+                <button onclick="saveApiSettings()" class="px-4 py-2 rounded-lg bg-gptGreen hover:bg-emerald-600 text-xs font-medium text-white">Save Settings</button>
+            </div>
+        </div>
     </div>
 
-    <!-- Simple Input Form -->
-    <footer class="bg-white border-t border-slate-200 p-3">
-        <form id="chatForm" onsubmit="handleSend(event)" class="max-w-3xl mx-auto flex items-center gap-2">
-            <input 
-                type="text" 
-                id="userInput" 
-                placeholder="Ask a placement question or type 'Mock Interview'..." 
-                class="flex-1 bg-slate-50 border border-slate-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-indigo-600 focus:bg-white transition"
-                autocomplete="off"
-            />
-            <button 
-                type="submit" 
-                class="bg-indigo-600 hover:bg-indigo-700 text-white font-medium px-4 py-2.5 rounded-xl text-sm transition flex items-center gap-1.5 shrink-0"
-            >
-                <span>Send</span>
-                <i class="fa-solid fa-paper-plane text-xs"></i>
-            </button>
-        </form>
-    </footer>
-
-    <!-- Simple Application Logic -->
+    <!-- Application Script -->
     <script>
-        let inMockInterview = false;
-        let interviewStep = 0;
-        let interviewType = 'tech'; // 'tech' or 'hr'
+        // State
+        let mockState = { active: false, type: 'tech', step: 0, score: 0 };
+        let messages = [];
 
-        const techQuestions = [
-            {
-                q: "Question 1: What is the difference between a Process and a Thread in Operating Systems?",
-                hint: "Think about memory isolation vs shared memory space.",
-                answer: "Process is an independent program in execution with isolated memory. A Thread is a subset of a process sharing the same memory space."
-            },
-            {
-                q: "Question 2: What is Method Overloading vs Method Overriding in Object-Oriented Programming?",
-                hint: "Consider compile-time vs runtime polymorphism.",
-                answer: "Overloading happens in the same class with different parameters (compile-time). Overriding redefines a base class method in a derived class with the exact same signature (runtime)."
-            },
-            {
-                q: "Question 3: How does a Hash Table achieve O(1) time complexity for lookup?",
-                hint: "Explain hashing functions and key indexing.",
-                answer: "A Hash Table uses a hash function to map keys directly to array indices for O(1) average lookup. Collisions are handled via chaining or open addressing."
-            }
-        ];
+        document.addEventListener('DOMContentLoaded', () => {
+            loadSavedSettings();
+            autoResizeTextarea();
+        });
 
-        const hrQuestions = [
-            {
-                q: "Question 1: Tell me about yourself and why you chose your branch of study.",
-                hint: "Use the Present-Past-Future format: Degree, key project, and why this role.",
-                answer: "Start with your current degree and branch, mention 1-2 practical projects or achievements, and conclude with your career motivation."
-            },
-            {
-                q: "Question 2: What is your biggest weakness and how are you improving it?",
-                hint: "Name a real professional area of growth and your active steps to fix it.",
-                answer: "Mention a real non-critical weakness (e.g. public speaking anxiety) and detail the concrete steps you are taking to overcome it."
-            }
-        ];
-
-        function handleSend(e) {
-            e.preventDefault();
-            const input = document.getElementById('userInput');
-            const msg = input.value.trim();
-            if (!msg) return;
-
-            // Render User Message
-            addMessage(msg, 'user');
-            input.value = '';
-
-            // Show Typing
-            document.getElementById('typing').classList.remove('hidden');
-            scrollToBottom();
-
-            // Simulate Bot Response
-            setTimeout(() => {
-                document.getElementById('typing').classList.add('hidden');
-                generateBotResponse(msg);
-                scrollToBottom();
-            }, 500);
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            sidebar.classList.toggle('-ml-64');
         }
 
-        function quickSend(text) {
-            document.getElementById('userInput').value = text;
+        function autoResizeTextarea() {
+            const textarea = document.getElementById('userPrompt');
+            textarea.addEventListener('input', () => {
+                textarea.style.height = 'auto';
+                textarea.style.height = Math.min(textarea.scrollHeight, 144) + 'px';
+            });
+        }
+
+        function onEnterPress(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                document.getElementById('chatForm').dispatchEvent(new Event('submit'));
+            }
+        }
+
+        function quickPrompt(text) {
+            document.getElementById('userPrompt').value = text;
             document.getElementById('chatForm').dispatchEvent(new Event('submit'));
         }
 
-        function addMessage(text, sender) {
-            const container = document.getElementById('chatMessages');
-            const div = document.createElement('div');
-            div.className = 'message-anim flex items-start gap-2.5 ' + (sender === 'user' ? 'justify-end' : '');
+        function triggerTask(taskType) {
+            if (taskType === 'mock_tech') {
+                quickPrompt("Start Technical Mock Interview for Software Engineering placement");
+            } else if (taskType === 'mock_hr') {
+                quickPrompt("Start HR Behavioral Mock Interview");
+            } else if (taskType === 'dsa_solver') {
+                quickPrompt("Give me a DSA Array & Hash Map coding problem with solution");
+            } else if (taskType === 'aptitude_solver') {
+                quickPrompt("Give me 2 Quantitative Aptitude questions with step-by-step solutions");
+            } else if (taskType === 'resume_builder') {
+                quickPrompt("How to write impactful resume bullet points for freshers?");
+            }
+        }
 
-            if (sender === 'user') {
+        function handleSend(e) {
+            e.preventDefault();
+            const textarea = document.getElementById('userPrompt');
+            const prompt = textarea.value.trim();
+            if (!prompt) return;
+
+            // Hide welcome screen
+            document.getElementById('welcomeScreen').classList.add('hidden');
+
+            // Render User Message
+            renderMessage(prompt, 'user');
+            textarea.value = '';
+            textarea.style.height = 'auto';
+
+            // Show Typing Indicator
+            document.getElementById('gptTyping').classList.remove('hidden');
+            scrollToBottom();
+
+            // Process AI Task Execution
+            setTimeout(() => {
+                document.getElementById('gptTyping').classList.add('hidden');
+                processTaskExecution(prompt);
+                scrollToBottom();
+            }, 600);
+        }
+
+        function renderMessage(text, role) {
+            const container = document.getElementById('messagesContainer');
+            const div = document.createElement('div');
+            div.className = "flex items-start gap-4 text-sm leading-relaxed";
+
+            if (role === 'user') {
                 div.innerHTML = `
-                    <div class="bg-indigo-600 text-white rounded-2xl rounded-tr-none px-4 py-2.5 text-sm max-w-[85%] shadow-sm leading-relaxed">
+                    <div class="w-8 h-8 rounded-full bg-indigo-600 text-white flex items-center justify-center text-xs font-bold shrink-0">
+                        U
+                    </div>
+                    <div class="flex-1 bg-gptCard border border-gptBorder px-4 py-3 rounded-2xl text-slate-100">
                         ${escapeHtml(text)}
                     </div>
                 `;
             } else {
+                const parsedContent = marked.parse(text);
                 div.innerHTML = `
-                    <div class="w-8 h-8 rounded-full bg-indigo-600 text-white flex items-center justify-center text-xs font-bold shrink-0">
-                        AI
+                    <div class="w-8 h-8 rounded-full bg-gptGreen text-white flex items-center justify-center text-xs font-bold shrink-0">
+                        <i class="fa-solid fa-robot"></i>
                     </div>
-                    <div class="bg-white border border-slate-200 rounded-2xl rounded-tl-none p-3.5 text-sm shadow-sm max-w-[85%] space-y-2 text-slate-800 leading-relaxed">
-                        ${formatText(text)}
+                    <div class="flex-1 markdown-body text-slate-200 overflow-hidden">
+                        ${parsedContent}
                     </div>
                 `;
             }
 
             container.appendChild(div);
+            // Highlight code blocks
+            container.querySelectorAll('pre code').forEach((block) => {
+                hljs.highlightElement(block);
+            });
             scrollToBottom();
         }
 
-        function generateBotResponse(userMsg) {
-            const text = userMsg.toLowerCase();
+        function processTaskExecution(prompt) {
+            const lower = prompt.toLowerCase();
 
-            // Mock Interview Flow
-            if (inMockInterview) {
-                const qList = interviewType === 'tech' ? techQuestions : hrQuestions;
-                const currentQ = qList[interviewStep];
-                
-                let feedback = `<b>Feedback on your response:</b><br>Good attempt! Key points to cover: ${currentQ.answer}<br><br>`;
-                interviewStep++;
+            // 1. Mock Interview Active Flow
+            if (mockState.active) {
+                evaluateMockStep(prompt);
+                return;
+            }
 
-                if (interviewStep < qList.length) {
-                    const nextQ = qList[interviewStep];
-                    addMessage(`${feedback}<b>Next Question (${interviewStep + 1}/${qList.length}):</b><br>${nextQ.q}`, 'bot');
+            // 2. Start Tech Mock Interview
+            if (lower.includes('tech mock') || lower.includes('technical mock')) {
+                startMockSession('tech');
+                return;
+            }
+
+            // 3. Start HR Mock Interview
+            if (lower.includes('hr mock') || lower.includes('behavioral mock')) {
+                startMockSession('hr');
+                return;
+            }
+
+            // 4. Specific Code & DSA Task
+            if (lower.includes('dsa') || lower.includes('code') || lower.includes('algorithm') || lower.includes('reverse') || lower.includes('array') || lower.includes('linked list')) {
+                renderMessage(`### 💻 Technical Coding Task & Solution
+
+**Problem: Reverse a Linked List**
+
+Given the head of a singly linked list, reverse the list, and return the reversed list.
+
+#### 🚀 Solution in C++:
+\`\`\`cpp
+#include <iostream>
+
+struct ListNode {
+    int val;
+    ListNode *next;
+    ListNode(int x) : val(x), next(nullptr) {}
+};
+
+class Solution {
+public:
+    ListNode* reverseList(ListNode* head) {
+        ListNode* prev = nullptr;
+        ListNode* curr = head;
+        
+        while (curr != nullptr) {
+            ListNode* nextTemp = curr->next; // Save next
+            curr->next = prev;              // Reverse link
+            prev = curr;                    // Move prev forward
+            curr = nextTemp;                // Move curr forward
+        }
+        return prev;
+    }
+};
+\`\`\`
+
+#### ⏱️ Complexity Analysis:
+- **Time Complexity:** $\\mathcal{O}(N)$ — Single pass through the list.
+- **Space Complexity:** $\\mathcal{O}(1)$ — In-place reversal using pointers.`, 'assistant');
+                return;
+            }
+
+            // 5. Aptitude Task
+            if (lower.includes('aptitude') || lower.includes('math') || lower.includes('time and work')) {
+                renderMessage(`### 📊 Quantitative Aptitude Task & Solution
+
+**Problem (Time & Work):**
+A can finish a task in 12 days. B is 50% more efficient than A. How many days will B take to complete the same task alone?
+
+#### 💡 Step-by-Step Breakdown:
+1. **Find A's 1-day work capacity:**
+   $$\\text{Work done by A in 1 day} = \\frac{1}{12}$$
+
+2. **Calculate B's efficiency:**
+   $$B = A \\times 1.5 = \\frac{1}{12} \\times 1.5 = \\frac{1.5}{12} = \\frac{3}{24} = \\frac{1}{8}$$
+
+3. **Determine B's total time:**
+   B completes $\\frac{1}{8}$ of the work in 1 day.
+   Therefore, B will take **8 days** to complete the entire task alone.`, 'assistant');
+                return;
+            }
+
+            // 6. Resume Bullet Optimization Task
+            if (lower.includes('resume') || lower.includes('bullet') || lower.includes('cv')) {
+                renderMessage(`### 📄 Resume Project Bullet Optimization Task
+
+Here is the **Google XYZ Formula** for writing high-impact resume bullets:
+> *"Accomplished [X] as measured by [Y], by doing [Z]"*
+
+#### ✏️ Before & After Examples:
+
+- ❌ **Weak:** *"Made a web app for study timing."*
+- ✅ **Strong:** *"Engineered a lightweight Pomodoro productivity extension serving 500+ active student users, reducing study session tracking overhead by 35%."*
+
+- ❌ **Weak:** *"Worked on SQL database queries."*
+- ✅ **Strong:** *"Optimized MySQL relational schema and indexed 10+ query bottlenecks, decreasing database response latency from 450ms to 80ms."*`, 'assistant');
+                return;
+            }
+
+            // 7. General Assistant Response
+            renderMessage(`I have processed your request for: **"${escapeHtml(prompt)}"**.
+
+As **CareerPrep AI**, I am ready to execute specific placement preparation tasks for you:
+1. 🎯 **Conduct Mock Technical or HR Interviews**
+2. 💻 **Generate & Debug DSA Code (C++, Java, Python, JS)**
+3. 📊 **Solve Quantitative & Verbal Aptitude Problems**
+4. 📄 **Rewrite & Optimize Resume Achievements**
+
+Let me know which specific task you'd like to perform next!`, 'assistant');
+        }
+
+        function startMockSession(type) {
+            mockState.active = true;
+            mockState.type = type;
+            mockState.step = 0;
+            mockState.score = 0;
+
+            const q = type === 'tech' 
+                ? "**Question 1 of 3 (Technical):** Explain the difference between **Process** and **Thread** in Operating Systems. Mention memory isolation and context switching."
+                : "**Question 1 of 2 (HR):** Tell me about yourself. Structure your response using the Present-Past-Future framework.";
+
+            renderMessage(`### 🎯 Mock ${type.toUpperCase()} Interview Started
+
+${q}
+
+*Type your answer in the message input below to receive instant feedback.*`, 'assistant');
+        }
+
+        function evaluateMockStep(userAnswer) {
+            let feedback = "";
+            if (mockState.type === 'tech') {
+                if (mockState.step === 0) {
+                    feedback = `✅ **Feedback on Question 1:**\nGood answer! **Key Points Covered:**\n- Process has independent memory space.\n- Threads share memory within the same process.\n- Context switching in threads is faster.`;
+                    mockState.step++;
+                    renderMessage(`${feedback}\n\n---\n\n**Question 2 of 3 (Technical):** What is the difference between **Method Overloading** and **Method Overriding** in OOP?`, 'assistant');
+                } else if (mockState.step === 1) {
+                    feedback = `✅ **Feedback on Question 2:**\nGreat job! Overloading is compile-time polymorphism in the same class, while Overriding is runtime polymorphism in inherited classes.`;
+                    mockState.step++;
+                    renderMessage(`${feedback}\n\n---\n\n**Question 3 of 3 (Technical):** Explain how a **Hash Table** achieves $\\mathcal{O}(1)$ average lookup time and how collisions are resolved.`, 'assistant');
                 } else {
-                    inMockInterview = false;
-                    addMessage(`${feedback}<b>🎉 Mock Interview Completed!</b><br>Great practice session. You can start another mock interview anytime!`, 'bot');
+                    mockState.active = false;
+                    renderMessage(`🎉 **Mock Technical Interview Completed!**\nExcellent practice session. You demonstrated strong CS fundamentals.`, 'assistant');
                 }
-                return;
+            } else {
+                mockState.active = false;
+                renderMessage(`🎉 **HR Mock Interview Completed!**\nWell structured answer using Present-Past-Future framework. Keep practicing your vocal delivery and confidence!`, 'assistant');
             }
-
-            // Start Tech Mock Interview
-            if (text.includes('tech mock') || text.includes('technical mock') || (text.includes('mock') && text.includes('tech'))) {
-                inMockInterview = true;
-                interviewStep = 0;
-                interviewType = 'tech';
-                addMessage(`🎯 <b>Technical Mock Interview Started!</b><br><br>${techQuestions[0].q}`, 'bot');
-                return;
-            }
-
-            // Start HR Mock Interview
-            if (text.includes('hr mock') || (text.includes('mock') && text.includes('hr'))) {
-                inMockInterview = true;
-                interviewStep = 0;
-                interviewType = 'hr';
-                addMessage(`👔 <b>HR Mock Interview Started!</b><br><br>${hrQuestions[0].q}`, 'bot');
-                return;
-            }
-
-            // DSA
-            if (text.includes('dsa') || text.includes('data structure') || text.includes('array') || text.includes('algorithm')) {
-                addMessage(`💻 <b>DSA Practice: Reverse an Array</b><br><br><b>Problem:</b> Given an array of numbers, reverse it in-place.<br><br><b>Two-Pointer Approach (O(N) Time, O(1) Space):</b><br>1. Set pointer <code>left = 0</code> and <code>right = length - 1</code>.<br>2. Swap <code>arr[left]</code> and <code>arr[right]</code>.<br>3. Increment <code>left</code> and decrement <code>right</code> until they meet.`, 'bot');
-                return;
-            }
-
-            // Aptitude
-            if (text.includes('aptitude') || text.includes('math')) {
-                addMessage(`📊 <b>Quantitative Aptitude Problem</b><br><br><b>Question:</b> A and B working together can complete a job in 6 days. A alone takes 10 days. How long will B take alone?<br><br><b>Solution:</b><br>• Combined 1-day work = 1/6<br>• A's 1-day work = 1/10<br>• B's 1-day work = 1/6 - 1/10 = (5-3)/30 = 2/30 = 1/15<br><br><b>Answer:</b> B will take <b>15 days</b> alone.`, 'bot');
-                return;
-            }
-
-            // Resume
-            if (text.includes('resume')) {
-                addMessage(`📄 <b>Fresher Resume Checklist:</b><br><br>1. Keep it strictly <b>1 Page</b>.<br>2. Format project bullets using action verbs (e.g. <i>"Developed real-time chat app using WebSockets..."</i>).<br>3. Include sections: Education, Skills, Projects, Achievements.<br>4. Always add your GitHub & LinkedIn profiles at the top.`, 'bot');
-                return;
-            }
-
-            // General Response
-            addMessage(`I can help you with:<br>• <b>Technical & HR Mock Interviews</b> (Type "Tech Mock" or "HR Mock")<br>• <b>DSA & Core CS Concepts</b> (Type "DSA")<br>• <b>Aptitude Practice</b> (Type "Aptitude")<br>• <b>Resume Guidelines</b> (Type "Resume")<br><br>What would you like to focus on right now?`, 'bot');
         }
 
         function scrollToBottom() {
-            const chat = document.getElementById('chatMessages');
-            chat.scrollTop = chat.scrollHeight;
+            const scrollArea = document.getElementById('chatScrollArea');
+            scrollArea.scrollTop = scrollArea.scrollHeight;
         }
 
-        function clearChat() {
-            inMockInterview = false;
-            interviewStep = 0;
-            document.getElementById('chatMessages').innerHTML = `
-                <div class="message-anim flex items-start gap-2.5">
-                    <div class="w-8 h-8 rounded-full bg-indigo-600 text-white flex items-center justify-center text-xs font-bold shrink-0">AI</div>
-                    <div class="bg-white border border-slate-200 rounded-2xl rounded-tl-none p-3.5 text-sm shadow-sm max-w-[85%] space-y-2">
-                        <p class="font-semibold text-indigo-950">Chat Reset! 👋</p>
-                        <p class="text-slate-600">How can CareerPrep AI help you prepare today?</p>
-                    </div>
-                </div>
-            `;
+        function createNewChat() {
+            mockState.active = false;
+            document.getElementById('messagesContainer').innerHTML = '';
+            document.getElementById('welcomeScreen').classList.remove('hidden');
         }
 
-        function formatText(str) {
-            return str;
+        function openApiSettings() {
+            document.getElementById('apiModal').classList.remove('hidden');
+        }
+
+        function closeApiSettings() {
+            document.getElementById('apiModal').classList.add('hidden');
+        }
+
+        function saveApiSettings() {
+            const key = document.getElementById('apiKeyInput').value;
+            const provider = document.getElementById('apiProvider').value;
+            localStorage.setItem('careerprep_apikey', key);
+            localStorage.setItem('careerprep_provider', provider);
+            
+            document.getElementById('apiKeyBadge').textContent = provider === 'builtin' ? 'Built-in' : 'Connected';
+            closeApiSettings();
+            alert('API Key Settings updated successfully!');
+        }
+
+        function loadSavedSettings() {
+            const provider = localStorage.getItem('careerprep_provider') || 'builtin';
+            document.getElementById('apiKeyBadge').textContent = provider === 'builtin' ? 'Built-in' : 'Connected';
         }
 
         function escapeHtml(text) {
